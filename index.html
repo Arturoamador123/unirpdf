@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unificador de PDFs | Premium Tool</title>
+    <meta name="description" content="Une varios archivos PDF de una carpeta en un solo archivo de forma automática y ordenada por fecha.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Decoraciones de fondo (Gradients) -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+
+        <main class="glass-panel">
+            <header>
+                <h1>PDF Merger</h1>
+                <p>Selecciona una carpeta y uniremos todos tus PDFs por fecha de creación.</p>
+            </header>
+
+            <section class="upload-section">
+                <div class="upload-area" id="drop-zone">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                    <h2>Seleccionar Carpeta</h2>
+                    <p>Haz clic para buscar en tu equipo</p>
+                    <input type="file" id="folder-input" webkitdirectory directory multiple accept="application/pdf" />
+                </div>
+            </section>
+
+            <section class="files-section" id="files-section" style="display: none;">
+                <div class="files-header">
+                    <h3>Archivos Encontrados (<span id="file-count">0</span>)</h3>
+                    <button class="btn-primary" id="merge-btn">
+                        <span>Unir PDFs</span>
+                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                    </button>
+                </div>
+                <ul class="file-list" id="file-list">
+                    <!-- Los archivos se inyectarán aquí -->
+                </ul>
+            </section>
+
+            <section class="loading-section" id="loading-section" style="display: none;">
+                <div class="spinner"></div>
+                <p>Procesando y uniendo archivos...</p>
+            </section>
+
+            <section class="success-section" id="success-section" style="display: none;">
+                <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2>¡PDFs Unificados con Éxito!</h2>
+                <p>Tu archivo consolidado se ha descargado automáticamente.</p>
+                <button class="btn-secondary" id="reset-btn">Unir más archivos</button>
+            </section>
+        </main>
+    </div>
+
+    <!-- PDF-Lib CDN (Para procesar el PDF en el frontend sin servidor backend) -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- Custom JS -->
+    <script src="script.js"></script>
+</body>
+</html>
