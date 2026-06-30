@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mergedPdfBytes = await mergedPdf.save();
         
         // Descargar el archivo
-        downloadBlob(mergedPdfBytes, 'Merged_Document.pdf', 'application/pdf');
+        downloadBlob(mergedPdfBytes, 'PdfGenerado.pdf', 'application/pdf');
     }
 
     // Utilidad para descargar el Blob generado
