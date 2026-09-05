@@ -10,10 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-btn');
 
     let pdfFiles = [];
+    // 1. NUEVA VARIABLE para almacenar el nombre de la carpeta
+    let folderName = 'Desconocida'; 
 
     // Manejar selección de carpeta
     folderInput.addEventListener('change', (event) => {
         const files = Array.from(event.target.files);
+        
+        // 2. EXTRAER EL NOMBRE DE LA CARPETA (tomando la ruta del primer archivo)
+        if (files.length > 0 && files[0].webkitRelativePath) {
+            folderName = files[0].webkitRelativePath.split('/')[0];
+        }
         
         // Filtrar solo archivos PDF
         pdfFiles = files.filter(file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
@@ -24,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Ordenar por fecha de última modificación (ascendente: más antiguos primero)
-        // Puedes cambiar a b.lastModified - a.lastModified para descendente
         pdfFiles.sort((a, b) => a.lastModified - b.lastModified);
 
         renderFileList();
@@ -97,8 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Serializar el PDF final a bytes
         const mergedPdfBytes = await mergedPdf.save();
         
-        // Descargar el archivo
-        downloadBlob(mergedPdfBytes, 'PdfGenerado.pdf', 'application/pdf');
+        // 3. DESCARGAR EL ARCHIVO CON EL NUEVO NOMBRE
+        // Formato: "generado_NombreDeLaCarpeta.pdf"
+        const finalFileName = `generado_${folderName}.pdf`; 
+        downloadBlob(mergedPdfBytes, finalFileName, 'application/pdf');
     }
 
     // Utilidad para descargar el Blob generado
@@ -122,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reiniciar la UI para otra operación
     resetBtn.addEventListener('click', () => {
         pdfFiles = [];
+        folderName = 'Desconocida'; // Reiniciar también el nombre de la carpeta
         folderInput.value = ''; // Limpiar input
         successSection.style.display = 'none';
         uploadSection.style.display = 'block';
