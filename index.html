@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unificador d</title>
-    <meta name="description" content="Une varios archivos PDF de una carpeta en un solo archivo de forma automática y ordenada por fecha.">
+    <title>Sistema Administrativo PDF</title>
+    <meta name="description" content="Herramientas administrativas para unir y editar archivos PDF.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,62 +12,219 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- PDF.js for Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 <body>
-    <div class="app-container">
+    <div class="app-container" id="app-container">
         <!-- Decoraciones de fondo (Gradients) -->
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
 
         <main class="glass-panel">
             <header>
-                <h1>Unificador de PDF's</h1>
-                <p>Selecciona una carpeta y uniremos todos tus.</p>
+                <h1>Sistema Administrativo</h1>
+                <nav class="module-nav">
+                    <button class="nav-btn active" id="nav-home">🏠 Inicio</button>
+                    <button class="nav-btn" id="nav-unifier">Unificador de PDFs</button>
+                    <button class="nav-btn" id="nav-editor">Editor de PDF</button>
+                    <button class="nav-btn" id="nav-converter">Convertidor</button>
+                </nav>
             </header>
 
-            <section class="upload-section">
-                <div class="upload-area" id="drop-zone">
-                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
-                    <h2>Seleccionar Carpeta</h2>
-                    <p>Haz clic para buscar en tu equipo</p>
-                    <input type="file" id="folder-input" webkitdirectory directory multiple accept="application/pdf" />
+            <!-- MODULE: HOME VIEW -->
+            <div id="home-view" class="home-view">
+                <header class="module-header" style="margin-bottom: 40px; text-align: center;">
+                    <h2>Bienvenido al Sistema</h2>
+                    <p>Selecciona una de las herramientas profesionales para comenzar.</p>
+                </header>
+                <div class="cards-container">
+                    <div class="home-card" id="card-unifier">
+                        <div class="card-icon">📁</div>
+                        <h3>Unificador de PDFs</h3>
+                        <p>Combina múltiples documentos PDF en uno solo rápidamente.</p>
+                    </div>
+                    <div class="home-card" id="card-editor">
+                        <div class="card-icon">📝</div>
+                        <h3>Editor de PDF</h3>
+                        <p>Añade texto, notas y marcas de agua de forma interactiva.</p>
+                    </div>
+                    <div class="home-card" id="card-converter">
+                        <div class="card-icon">🔄</div>
+                        <h3>Convertidor</h3>
+                        <p>Convierte PDFs e imágenes a Excel, Word y PowerPoint (todo el archivo o solo tablas).</p>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            <section class="files-section" id="files-section" style="display: none;">
-                <div class="files-header">
-                    <h3>Archivos Encontrados (<span id="file-count">0</span>)</h3>
-                    <button class="btn-primary" id="merge-btn">
-                        <span>Unir PDFs</span>
-                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <!-- MODULE: UNIFICADOR -->
+            <div id="unifier-view" style="display: none;">
+                <header class="module-header">
+                    <h2>Unificador</h2>
+                    <p>Selecciona una carpeta y uniremos todos tus PDFs por fecha de creación.</p>
+                </header>
+                <section class="upload-section">
+                    <div class="upload-area" id="drop-zone">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
                         </svg>
-                    </button>
+                        <h2>Seleccionar Carpeta</h2>
+                        <p>Haz clic para buscar en tu equipo</p>
+                        <input type="file" id="folder-input" class="hidden-file-input" webkitdirectory directory multiple />
+                    </div>
+                </section>
+
+                <section class="files-section" id="files-section" style="display: none;">
+                    <div class="files-header">
+                        <h3>Archivos Encontrados (<span id="file-count">0</span>)</h3>
+                        <button class="btn-primary" id="merge-btn">
+                            <span>Unir PDFs</span>
+                            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                        </button>
+                    </div>
+                    <ul class="file-list" id="file-list">
+                        <!-- Los archivos se inyectarán aquí -->
+                    </ul>
+                </section>
+
+                <section class="loading-section" id="loading-section" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Procesando y uniendo archivos...</p>
+                </section>
+
+                <section class="success-section" id="success-section" style="display: none;">
+                    <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2>¡PDFs Unificados con Éxito!</h2>
+                    <p>Tu archivo consolidado se ha descargado automáticamente.</p>
+                    <button class="btn-secondary" id="reset-btn">Realizar nueva unificación</button>
+                </section>
+            </div>
+
+            <!-- MODULE: EDITOR -->
+            <div id="editor-view" style="display: none;">
+                <header class="module-header">
+                    <h2>Editor de PDF</h2>
+                    <p>Añade texto, imágenes y marcas de agua de manera esencial.</p>
+                </header>
+
+                <section class="editor-tools" id="editor-tools" style="display: none;">
+                    <div class="toolbar">
+                        <button class="tool-btn" id="tool-text" title="Añadir Texto">📝 Texto</button>
+                        <button class="tool-btn" id="tool-image" title="Añadir Imagen">🖼️ Imagen</button>
+                        <button class="tool-btn" id="tool-watermark" title="Marca de Agua">💧 Marca</button>
+                        <button class="tool-btn" id="tool-fullscreen" title="Pantalla Completa">🔲 Pantalla Completa</button>
+                        <button class="btn-primary" id="save-pdf-btn">Guardar PDF</button>
+                    </div>
+                    <!-- Paginación -->
+                    <div class="pagination">
+                        <button id="prev-page">Anterior</button>
+                        <span>Página: <span id="page-num"></span> / <span id="page-count"></span></span>
+                        <button id="next-page">Siguiente</button>
+                    </div>
+                </section>
+
+                <section class="upload-section" id="editor-upload-section">
+                    <div class="upload-area" id="editor-drop-zone">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <h2>Seleccionar un PDF</h2>
+                        <p>Haz clic para abrir el archivo a editar</p>
+                        <input type="file" id="editor-file-input" class="hidden-file-input" />
+                    </div>
+                </section>
+                
+                <div class="pdf-viewer-container" id="pdf-viewer-container" style="display: none;">
+                    <canvas id="pdf-render"></canvas>
+                    <div id="interaction-layer" class="interaction-layer"></div>
+                    
+                    <!-- Floating Toolbar -->
+                    <div id="floating-toolbar" class="floating-toolbar" style="display: none;">
+                        <select id="ft-font" title="Familia de Fuente">
+                            <option value="helv">Arial / Helvetica</option>
+                            <option value="ti-ro">Times New Roman</option>
+                            <option value="cour">Courier New</option>
+                        </select>
+                        <button id="ft-bold" title="Negrita"><b>B</b></button>
+                        <button id="ft-size-down" title="Disminuir Tamaño">A-</button>
+                        <button id="ft-size-up" title="Aumentar Tamaño">A+</button>
+                        <input type="color" id="ft-color" value="#000000" title="Color de Letra">
+                        <button id="ft-delete" style="color: #ef4444;" title="Eliminar">🗑️</button>
+                    </div>
                 </div>
-                <ul class="file-list" id="file-list">
-                    <!-- Los archivos se inyectarán aquí -->
-                </ul>
-            </section>
 
-            <section class="loading-section" id="loading-section" style="display: none;">
-                <div class="spinner"></div>
-                <p>Procesando y uniendo archivos...</p>
-            </section>
+                <!-- Hidden file input for adding image to pdf -->
+                <input type="file" id="image-upload-input" accept="image/*" style="display:none;" />
+            </div>
 
-            <section class="success-section" id="success-section" style="display: none;">
-                <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h2>¡PDFs Unificados con Éxito!</h2>
-                <p>Tu archivo consolidado se ha descargado automáticamente.</p>
-                <button class="btn-secondary" id="reset-btn">Realizar nueva unificación</button>
-            </section>
+            <!-- MODULE: CONVERTIDOR -->
+            <div id="converter-view" style="display: none;">
+                <header class="module-header">
+                    <h2>Convertidor de Formatos</h2>
+                    <p>Convierte PDFs e imágenes a Excel, Word o PowerPoint. Elige convertir todo el archivo o extraer únicamente las tablas.</p>
+                </header>
+
+                <section class="upload-section" id="converter-upload-section">
+                    <div class="upload-area" id="converter-drop-zone">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        <h2>Seleccionar Archivo o Imagen</h2>
+                        <p>Soporta PDF, Imágenes (PNG, JPG, WEBP, BMP, TIFF), DOCX y PPTX</p>
+                        <input type="file" id="converter-file-input" class="hidden-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tiff,.tif,.docx,.pptx,image/*,application/pdf" />
+                    </div>
+                </section>
+
+                <section class="options-section" id="converter-options" style="display: none; text-align: center; margin-top: 20px;">
+                    <h3 style="margin-bottom: 18px;">Archivo seleccionado: <span id="converter-filename" style="color: #a78bfa;"></span></h3>
+                    
+                    <div class="converter-controls-grid">
+                        <div class="converter-field">
+                            <label for="convert-target">Formato de salida:</label>
+                            <select id="convert-target" class="converter-select">
+                                <!-- Opciones se llenarán dinámicamente -->
+                            </select>
+                        </div>
+
+                        <div class="converter-field" id="convert-mode-container">
+                            <label>Modo de conversión:</label>
+                            <div class="mode-selector" id="convert-mode-group">
+                                <label class="mode-option active" id="label-mode-all">
+                                    <input type="radio" name="conversion-mode" value="all" checked />
+                                    <span class="mode-title">📄 Todo el archivo</span>
+                                    <span class="mode-desc">Texto, tablas e imágenes completas</span>
+                                </label>
+                                <label class="mode-option" id="label-mode-tables">
+                                    <input type="radio" name="conversion-mode" value="tables" />
+                                    <span class="mode-title">📊 Solo detectar tablas</span>
+                                    <span class="mode-desc">Extrae únicamente las tablas encontradas</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="converter-actions">
+                        <button class="btn-secondary" id="change-convert-file-btn" style="margin-top: 0;">Cambiar Archivo</button>
+                        <button class="btn-primary" id="start-convert-btn">Convertir y Descargar</button>
+                    </div>
+                </section>
+                
+                <section class="loading-section" id="converter-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Procesando conversión y analizando estructura... Esto puede tardar unos segundos.</p>
+                </section>
+            </div>
+
         </main>
     </div>
 
-    <!-- PDF-Lib CDN (Para procesar el PDF en el frontend sin servidor backend) -->
+    <!-- PDF-Lib CDN (Para procesar el PDF en el frontend sin servidor backend - Unificador) -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <!-- Custom JS -->
     <script src="script.js"></script>
