@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- URL del backend ---
+    // 1) Si config.js define window.API_BASE_URL, se usa esa (backend en otro servidor).
+    // 2) Si abres index.html desde tu PC (file://) o localhost:5500 etc., usa http://localhost:8001.
+    // 3) Si la web está publicada y sirve el backend (mismo dominio), usa rutas relativas.
+    const API_BASE = (typeof window.API_BASE_URL === 'string' && window.API_BASE_URL.trim() !== '')
+        ? window.API_BASE_URL.trim().replace(/\/+$/, '')
+        : ((location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') && location.port !== '8001'
+            ? 'http://localhost:8001'
+            : '');
+
     // --- Navigation Logic ---
     const navHome = document.getElementById('nav-home');
     const navUnifier = document.getElementById('nav-unifier');
@@ -686,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
             savePdfBtn.textContent = 'Guardando...';
             savePdfBtn.disabled = true;
 
-            const response = await fetch('http://localhost:8001/api/pdf/edit', {
+            const response = await fetch(API_BASE + '/api/pdf/edit', {
                 method: 'POST',
                 body: formData
             });
@@ -831,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('conversion_mode', conversionMode);
         
         try {
-            const response = await fetch('http://localhost:8001/api/convert', {
+            const response = await fetch(API_BASE + '/api/convert', {
                 method: 'POST',
                 body: formData
             });

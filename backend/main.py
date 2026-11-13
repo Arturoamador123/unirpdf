@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+﻿from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, FileResponse
 from fastapi.background import BackgroundTasks
@@ -26,7 +26,7 @@ from pptx.dml.color import RGBColor as PptxRGBColor
 
 import xlsxwriter
 
-# Aumentar límite de campo form para python-multipart (permite imágenes grandes en base64)
+# Aumentar lÃ­mite de campo form para python-multipart (permite imÃ¡genes grandes en base64)
 try:
     import multipart.multipart as _mp
     _mp.MAX_FORM_MEMORY_SIZE = 100 * 1024 * 1024   # 100 MB
@@ -51,10 +51,36 @@ app.add_middleware(
 
 IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif"}
 
+# --- Servir el frontend desde el mismo backend (un solo servicio en la nube) ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_FILES = {
+    "index.html": "text/html",
+    "script.js": "application/javascript",
+    "style.css": "text/css",
+    "config.js": "application/javascript",
+}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 
 @app.get("/")
 def read_root():
+    index_path = os.path.join(BASE_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
     return {"status": "ok"}
+
+
+@app.get("/{filename}")
+def serve_static(filename: str):
+    if filename in STATIC_FILES:
+        path = os.path.join(BASE_DIR, filename)
+        if os.path.exists(path):
+            return FileResponse(path, media_type=STATIC_FILES[filename])
+    raise HTTPException(status_code=404, detail="No encontrado")
 
 
 # =====================================================================
@@ -67,7 +93,7 @@ async def edit_pdf(request: Request):
         file_upload = form.get("file")
         actions_str = form.get("actions", "[]")
         if file_upload is None:
-            raise HTTPException(status_code=400, detail="No se recibió el archivo PDF.")
+            raise HTTPException(status_code=400, detail="No se recibiÃ³ el archivo PDF.")
         pdf_bytes = await file_upload.read()
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         action_list = json.loads(actions_str)
@@ -159,8 +185,54 @@ async def edit_pdf(request: Request):
 
 
 # =====================================================================
-# 2. WINDOWS NATIVE OCR & IMAGE TABLE DETECTION
+# 2. OCR (Windows nativo o Tesseract en Linux/nube) & IMAGE TABLE DETECTION
 # =====================================================================
+def run_tesseract_ocr(image_path: str):
+    """
+    OCR con Tesseract (para servidores Linux/nube). Requiere el paquete `pytesseract`
+    y el programa `tesseract-ocr` (con idioma espaÃ±ol `tesseract-ocr-spa`) instalados.
+    Devuelve lista de tuplas (x0, y0, x1, y1, texto).
+    """
+    try:
+        import pytesseract
+    except Exception:
+        print("pytesseract no estÃ¡ instalado; OCR no disponible en este servidor.")
+        return []
+    try:
+        with Image.open(image_path) as im:
+            rgb = im.convert("RGB")
+            try:
+                langs = pytesseract.get_languages(config="")
+            except Exception:
+                langs = []
+            lang = "spa+eng" if "spa" in langs else "eng"
+            data = pytesseract.image_to_data(rgb, lang=lang, output_type=pytesseract.Output.DICT)
+        words = []
+        for i, txt in enumerate(data.get("text", [])):
+            txt = (txt or "").strip()
+            try:
+                conf = float(data["conf"][i])
+            except Exception:
+                conf = -1
+            if not txt or conf < 0:
+                continue
+            x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
+            words.append((float(x), float(y), float(x + w), float(y + h), txt))
+        return words
+    except Exception as e:
+        print(f"Error en run_tesseract_ocr: {e}")
+        return []
+
+
+def run_ocr(image_path: str):
+    """Elige el motor OCR segÃºn el sistema operativo."""
+    if os.name == "nt":
+        words = run_windows_ocr(image_path)
+        if words:
+            return words
+    return run_tesseract_ocr(image_path)
+
+
 def run_windows_ocr(image_path: str):
     """
     Runs Windows built-in OcrEngine (Windows.Media.Ocr) on an image file.
@@ -667,7 +739,7 @@ def analyze_source_file(input_path: str, ext: str):
             im_rgb.save(buf, format="PNG")
             page_png = buf.getvalue()
 
-        ocr_words = run_windows_ocr(input_path)
+        ocr_words = run_ocr(input_path)
         tables = detect_grid_tables_in_image(input_path, ocr_words)
         existing_bboxes = [t["bbox"] for t in tables]
         aligned_tables = extract_tables_from_words(ocr_words, w, h, exclude_bboxes=existing_bboxes)
@@ -774,7 +846,7 @@ def analyze_source_file(input_path: str, ext: str):
             with os.fdopen(fd_scan, "wb") as f_scan:
                 f_scan.write(page_png)
             try:
-                ocr_words = run_windows_ocr(scan_png_path)
+                ocr_words = run_ocr(scan_png_path)
                 grid_tabs = detect_grid_tables_in_image(scan_png_path, ocr_words)
                 tables.extend(grid_tabs)
                 existing_bboxes = [t["bbox"] for t in tables]
@@ -853,7 +925,7 @@ def generate_excel(pages_data, output_path: str, mode: str = "all"):
     if mode == "tables" and not all_tables:
         raise HTTPException(
             status_code=400,
-            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opción 'Convertir todo el archivo'.",
+            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opciÃ³n 'Convertir todo el archivo'.",
         )
 
     workbook = xlsxwriter.Workbook(output_path)
@@ -921,7 +993,7 @@ def generate_excel(pages_data, output_path: str, mode: str = "all"):
         for idx, (page_num, rows) in enumerate(all_tables):
             sheet_name = f"Tabla_{idx + 1}_Pag_{page_num}"[:31]
             ws = workbook.add_worksheet(sheet_name)
-            ws.write(0, 0, f"Tabla {idx + 1} (Extraída de Página {page_num})", subtitle_fmt)
+            ws.write(0, 0, f"Tabla {idx + 1} (ExtraÃ­da de PÃ¡gina {page_num})", subtitle_fmt)
             _, col_widths = write_table_to_sheet(ws, 2, rows)
             for c_idx, width in col_widths.items():
                 ws.set_column(c_idx, c_idx, width)
@@ -930,7 +1002,7 @@ def generate_excel(pages_data, output_path: str, mode: str = "all"):
         for p in pages_data:
             sheet_name = f"Pagina_{p['page_num']}"[:31]
             ws = workbook.add_worksheet(sheet_name)
-            ws.write(0, 0, f"Contenido de Página {p['page_num']}", title_fmt)
+            ws.write(0, 0, f"Contenido de PÃ¡gina {p['page_num']}", title_fmt)
 
             # Combine text blocks and tables sorted by vertical position y0
             elements = []
@@ -972,7 +1044,7 @@ def generate_excel(pages_data, output_path: str, mode: str = "all"):
         for idx, (page_num, rows) in enumerate(all_tables):
             sheet_name = f"Tabla_{idx + 1}"[:31]
             ws = workbook.add_worksheet(sheet_name)
-            ws.write(0, 0, f"Tabla {idx + 1} (Página {page_num})", subtitle_fmt)
+            ws.write(0, 0, f"Tabla {idx + 1} (PÃ¡gina {page_num})", subtitle_fmt)
             _, col_widths = write_table_to_sheet(ws, 2, rows)
             for c_idx, width in col_widths.items():
                 ws.set_column(c_idx, c_idx, width)
@@ -1033,7 +1105,7 @@ def generate_word(pages_data, output_path: str, mode: str = "all"):
     if mode == "tables" and not all_tables:
         raise HTTPException(
             status_code=400,
-            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opción 'Convertir todo el archivo'.",
+            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opciÃ³n 'Convertir todo el archivo'.",
         )
 
     doc = DocxDocument()
@@ -1041,7 +1113,7 @@ def generate_word(pages_data, output_path: str, mode: str = "all"):
     if mode == "tables":
         heading = doc.add_heading("Tablas Detectadas", level=1)
         for idx, (page_num, rows) in enumerate(all_tables):
-            sub = doc.add_heading(f"Tabla {idx + 1} (Página {page_num})", level=2)
+            sub = doc.add_heading(f"Tabla {idx + 1} (PÃ¡gina {page_num})", level=2)
             add_table_to_docx(doc, rows)
             doc.add_paragraph("")
     else:
@@ -1150,7 +1222,7 @@ def generate_pptx(input_path: str, ext: str, pages_data, output_path: str, mode:
     if mode == "tables" and not all_tables:
         raise HTTPException(
             status_code=400,
-            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opción 'Convertir todo el archivo'.",
+            detail="No se detectaron tablas en el archivo seleccionado. Si deseas convertir todo el contenido, elige la opciÃ³n 'Convertir todo el archivo'.",
         )
 
     prs = Presentation()
@@ -1165,14 +1237,14 @@ def generate_pptx(input_path: str, ext: str, pages_data, output_path: str, mode:
             header = rows[0]
             data_rows = rows[1:]
             if len(rows) <= MAX_ROWS_PER_SLIDE or not data_rows:
-                add_editable_table_slide(prs, f"Tabla {idx + 1} (Página {page_num})", rows)
+                add_editable_table_slide(prs, f"Tabla {idx + 1} (PÃ¡gina {page_num})", rows)
             else:
                 for chunk_idx in range(0, len(data_rows), MAX_ROWS_PER_SLIDE - 1):
                     chunk = [header] + data_rows[chunk_idx:chunk_idx + MAX_ROWS_PER_SLIDE - 1]
                     part_num = (chunk_idx // (MAX_ROWS_PER_SLIDE - 1)) + 1
                     add_editable_table_slide(
                         prs,
-                        f"Tabla {idx + 1} - Parte {part_num} (Página {page_num})",
+                        f"Tabla {idx + 1} - Parte {part_num} (PÃ¡gina {page_num})",
                         chunk,
                     )
         prs.save(output_path)
@@ -1186,7 +1258,7 @@ def generate_pptx(input_path: str, ext: str, pages_data, output_path: str, mode:
             w = page.rect.width
             h = page.rect.height
 
-            # Heurística de división: Si es Vertical (Portrait), asumimos 2 diapositivas por hoja (mitad superior e inferior)
+            # HeurÃ­stica de divisiÃ³n: Si es Vertical (Portrait), asumimos 2 diapositivas por hoja (mitad superior e inferior)
             if h > w and (h / w) > 1.1:
                 rect1 = fitz.Rect(0, 0, w, h / 2)
                 rect2 = fitz.Rect(0, h / 2, w, h)
@@ -1215,14 +1287,14 @@ def generate_pptx(input_path: str, ext: str, pages_data, output_path: str, mode:
             header = rows[0]
             data_rows = rows[1:]
             if len(rows) <= MAX_ROWS_PER_SLIDE or not data_rows:
-                add_editable_table_slide(prs, f"Tabla Editable {idx + 1} (Página {page_num})", rows)
+                add_editable_table_slide(prs, f"Tabla Editable {idx + 1} (PÃ¡gina {page_num})", rows)
             else:
                 for chunk_idx in range(0, len(data_rows), MAX_ROWS_PER_SLIDE - 1):
                     chunk = [header] + data_rows[chunk_idx:chunk_idx + MAX_ROWS_PER_SLIDE - 1]
                     part_num = (chunk_idx // (MAX_ROWS_PER_SLIDE - 1)) + 1
                     add_editable_table_slide(
                         prs,
-                        f"Tabla Editable {idx + 1} - Parte {part_num} (Página {page_num})",
+                        f"Tabla Editable {idx + 1} - Parte {part_num} (PÃ¡gina {page_num})",
                         chunk,
                     )
 
@@ -1318,7 +1390,7 @@ async def convert_file(
     conversion_mode: str = Form("all"),  # "all" (todo el archivo) or "tables" (solo tablas)
 ):
     if not file.filename or "." not in file.filename:
-        raise HTTPException(status_code=400, detail="El archivo no tiene una extensión válida.")
+        raise HTTPException(status_code=400, detail="El archivo no tiene una extensiÃ³n vÃ¡lida.")
 
     ext = file.filename.rsplit(".", 1)[-1].lower()
     target_format = target_format.lower().strip()
@@ -1353,13 +1425,13 @@ async def convert_file(
             elif ext in IMAGE_EXTENSIONS and target_format == "pdf":
                 image_to_pdf(in_path, out_path)
             else:
-                raise HTTPException(status_code=400, detail=f"Conversión de .{ext} a .{target_format} no soportada.")
+                raise HTTPException(status_code=400, detail=f"ConversiÃ³n de .{ext} a .{target_format} no soportada.")
 
         elif ext in ("docx", "pptx") and target_format == "pdf":
             office_to_pdf(in_path, out_path, ext)
 
         else:
-            raise HTTPException(status_code=400, detail=f"Conversión de .{ext} a .{target_format} no soportada.")
+            raise HTTPException(status_code=400, detail=f"ConversiÃ³n de .{ext} a .{target_format} no soportada.")
 
         media_type = MEDIA_TYPES.get(target_format, "application/octet-stream")
         background_tasks.add_task(cleanup_files, [in_path, out_path])

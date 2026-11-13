@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+pymupdf
+pillow
+numpy
+python-docx
+python-pptx
+xlsxwriter
+pytesseract
