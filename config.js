@@ -1,4 +1,5 @@
-// URL del backend. Déjala vacía si el backend sirve esta misma página (recomendado).
-// Si el frontend y el backend están en servidores distintos, pon aquí la URL del backend, por ejemplo:
-// window.API_BASE_URL = 'https://mi-backend.onrender.com';
+// URL del backend (el servidor que hace las conversiones).
+// - En local (abriendo index.html o con uvicorn en tu PC) déjala vacía: usa http://localhost:8001 automáticamente.
+// - En Vercel (que solo muestra la página) pon aquí la URL HTTPS de tu backend, por ejemplo:
+//   window.API_BASE_URL = 'https://unirpdf-backend.onrender.com';
 window.API_BASE_URL = '';
